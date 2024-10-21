@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal Planner with Macro Calculator</title>
+  
+  <!-- Google Font (Poppins) -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f0f0f0;
+      color: #333;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #007bff;
+      font-weight: 600;
+    }
+
+    .meal-section, .macro-section {
+      margin-bottom: 30px;
+      padding: 15px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    select, input {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+      color: #333;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s ease;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #added-food-list {
+      margin-top: 20px;
+    }
+
+    #added-food-list table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #added-food-list th, #added-food-list td {
+      border: 1px solid #ddd;
+      text-align: center;
+      padding: 12px;
+    }
+
+    #added-food-list th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    #added-food-list tbody tr:nth-child(odd) {
+      background-color: #f9f9f9;
+    }
+
+    #added-food-list tbody tr:nth-child(even) {
+      background-color: #fff;
+    }
+
+    #total-nutrients {
+      margin-top: 40px;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    #total-nutrients p {
+      font-size: 18px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .button-group button {
+      width: 48%;
+    }
+
+    .macro-goal-status {
+      font-size: 18px;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+
+    .goal-met {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .goal-close {
+      background-color: #ffc107;
+      color: white;
+    }
+
+    .goal-under {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .remove-item {
+      background-color: #dc3545;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    @media screen and (max-width: 600px) {
+      .button-group {
+        flex-direction: column;
+      }
+      .button-group button {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Meal Planner</h1>
+
+  <!-- Macro Goals Section -->
+  <div class="macro-section">
+    <h2>Calculate Your Required Macros</h2>
+    <input type="number" id="age" placeholder="Age" min="0">
+    <input type="number" id="weight" placeholder="Weight (kg)" min="0">
+    <input type="number" id="height" placeholder="Height (cm)" min="0">
+    <select id="activity-level">
+      <option value="">Select Activity Level...</option>
+      <option value="1.2">Sedentary (little or no exercise)</option>
+      <option value="1.375">Lightly Active (light exercise/sports 1-3 days a week)</option>
+      <option value="1.55">Moderately Active (moderate exercise/sports 3-5 days a week)</option>
+      <option value="1.725">Very Active (hard exercise/sports 6-7 days a week)</option>
+      <option value="1.9">Super Active (very hard exercise, physical job, or training twice a day)</option>
+    </select>
+    <select id="goal">
+      <option value="">Select Goal...</option>
+      <option value="bulk">Bulk</option>
+      <option value="maintain">Maintain</option>
+      <option value="cut">Cut</option>
+    </select>
+    <button onclick="calculateRequiredMacros()">Calculate Macros</button>
+    <div id="macro-goals">
+      <p id="macro-calories-goal">Calories: 0 kcal</p>
+      <p id="macro-protein-goal">Protein: 0 g</p>
+      <p id="macro-fat-goal">Fat: 0 g</p>
+      <p id="macro-carbs-goal">Carbohydrates: 0 g</p>
+    </div>
+  </div>
+
+  <!-- Food Input Section (for adding new food items) -->
+  <div class="meal-section">
+    <h2>Add New Food Item</h2>
+    <input type="text" id="food-name" placeholder="Food Name">
+    <input type="number" id="food-calories" placeholder="Calories per 100g" min="0">
+    <input type="number" id="food-protein" placeholder="Protein per 100g (g)" min="0">
+    <input type="number" id="food-fat" placeholder="Fat per 100g (g)" min="0">
+    <input type="number" id="food-carbs" placeholder="Carbs per 100g (g)" min="0">
+    <input type="number" id="food-sugar" placeholder="Sugar per 100g (g)" min="0">
+    <button onclick="addNewFood()">Add Food to List</button>
+  </div>
+
+  <!-- Food Selection Section -->
+  <div class="meal-section">
+    <h2>Select Food</h2>
+    <select id="food-dropdown">
+      <option value="">Select food...</option>
+    </select>
+    <input type="number" id="food-weight" placeholder="Weight (g)" min="1">
+    <div class="button-group">
+      <button onclick="addSelectedFood()">Add to Meal</button>
+      <button onclick="clearDropdown()">Clear Dropdown</button>
+    </div>
+  </div>
+
+  <!-- List of Added Foods -->
+  <div id="added-food-list" class="meal-section">
+    <h2>Added Foods</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Food</th>
+          <th>Weight (g)</th>
+          <th>Calories</th>
+          <th>Protein (g)</th>
+          <th>Fat (g)</th>
+          <th>Carbs (g)</th>
+          <th>Sugar (g)</th>
+          <th>Remove</th> <!-- New Remove Column -->
+        </tr>
+      </thead>
+      <tbody id="food-table-body">
+        <!-- Dynamically populated food items will appear here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Buttons for Calculating Totals, Clearing the List, and Recommending a Meal -->
+  <div class="button-group">
+    <button onclick="calculateTotals()">Calculate Total Nutrients</button>
+    <button onclick="clearFoodList()">Clear List</button>
+    <button onclick="recommendMeal()">Recommend Meal</button>
+  </div>
+
+  <!-- Output Section -->
+  <div id="total-nutrients">
+    <h2>Total Nutrients</h2>
+    <p id="calories-total">Calories: 0 kcal</p>
+    <p id="protein-total">Protein: 0 g</p>
+    <p id="fat-total">Fat: 0 g</p>
+    <p id="carbs-total">Carbohydrates: 0 g</p>
+    <p id="sugar-total">Sugar: 0 g</p>
+  </div>
+
+  <!-- jQuery and Select2 JavaScript -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  <script>
+    // Initialize food items array
+    let foodItems = JSON.parse(localStorage.getItem('foodItems')) || [];
+
+    // Array to hold the selected foods added to the meal
+    let addedFoods = [];
+    let macroGoals = { calories: 0, protein: 0, fat: 0, carbs: 0 };
+
+    // Initialize the Select2 dropdown
+    $(document).ready(function() {
+      $('#food-dropdown').select2({
+        placeholder: "Select food...",
+        allowClear: true
+      });
+      // Repopulate dropdown with saved food items
+      populateDropdownFromStorage();
+    });
+
+    // Function to add a new food item
+    function addNewFood() {
+      const foodName = document.getElementById('food-name').value;
+      const calories = parseFloat(document.getElementById('food-calories').value);
+      const protein = parseFloat(document.getElementById('food-protein').value);
+      const fat = parseFloat(document.getElementById('food-fat').value);
+      const carbs = parseFloat(document.getElementById('food-carbs').value);
+      const sugar = parseFloat(document.getElementById('food-sugar').value);
+
+      if (foodName && !isNaN(calories) && !isNaN(protein) && !isNaN(fat) && !isNaN(carbs) && !isNaN(sugar)) {
+        // Add the new food item to the list
+        const newFood = { name: foodName, calories, protein, fat, carbs, sugar, defaultWeight: 100 };
+        foodItems.push(newFood);
+
+        // Save to local storage
+        localStorage.setItem('foodItems', JSON.stringify(foodItems));
+
+        // Add the new food to the dropdown
+        const newOption = new Option(`${foodName} (${calories} kcal per 100g)`, foodName);
+        $('#food-dropdown').append(newOption);
+
+        // Reset the input fields
+        document.getElementById('food-name').value = '';
+        document.getElementById('food-calories').value = '';
+        document.getElementById('food-protein').value = '';
+        document.getElementById('food-fat').value = '';
+        document.getElementById('food-carbs').value = '';
+        document.getElementById('food-sugar').value = '';
+      } else {
+        alert("Please fill out all fields with valid data.");
+      }
+    }
+
+    // Populate dropdown from local storage
+    function populateDropdownFromStorage() {
+      foodItems.forEach(food => {
+        const newOption = new Option(`${food.name} (${food.calories} kcal per 100g)`, food.name);
+        $('#food-dropdown').append(newOption);
+      });
+    }
+
+    // Function to add selected food to the meal list
+    function addSelectedFood() {
+      const selectedFoodName = document.getElementById('food-dropdown').value;
+      const weight = parseFloat(document.getElementById('food-weight').value);
+
+      if (selectedFoodName && weight > 0) {
+        const selectedFood = foodItems.find(food => food.name === selectedFoodName);
+        const ratio = weight / selectedFood.defaultWeight;
+
+        const addedFood = {
+          name: selectedFood.name,
+          weight,
+          calories: selectedFood.calories * ratio,
+          protein: selectedFood.protein * ratio,
+          fat: selectedFood.fat * ratio,
+          carbs: selectedFood.carbs * ratio,
+          sugar: selectedFood.sugar * ratio
+        };
+
+        addedFoods.push(addedFood);
+
+        updateFoodTable(); // Update the table after adding the food
+
+        // Clear the dropdown and weight input after adding
+        $('#food-dropdown').val(null).trigger('change');
+        document.getElementById('food-weight').value = '';
+      } else {
+        alert("Please select a food and enter a valid weight.");
+      }
+    }
+
+    // Function to update the food table
+    function updateFoodTable() {
+      const foodTableBody = document.getElementById('food-table-body');
+      foodTableBody.innerHTML = ''; // Clear existing table content
+
+      addedFoods.forEach((food, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${food.name}</td>
+          <td>${food.weight}g</td>
+          <td>${food.calories.toFixed(2)} kcal</td>
+          <td>${food.protein.toFixed(2)} g</td>
+          <td>${food.fat.toFixed(2)} g</td>
+          <td>${food.carbs.toFixed(2)} g</td>
+          <td>${food.sugar.toFixed(2)} g</td>
+          <td><button class="remove-item" onclick="removeItem(${index})">Remove</button></td>
+        `;
+        foodTableBody.appendChild(row);
+      });
+
+      calculateTotals(); // Recalculate totals when the table is updated
+    }
+
+    // Function to remove an item from the food list
+    function removeItem(index) {
+      addedFoods.splice(index, 1); // Remove the selected food item from the list
+      updateFoodTable(); // Recalculate and update the table after removing the item
+    }
+
+    // Function to calculate total nutrients and color code based on goals
+    function calculateTotals() {
+      let totalCalories = 0, totalProtein = 0, totalFat = 0, totalCarbs = 0, totalSugar = 0;
+
+      addedFoods.forEach(food => {
+        totalCalories += food.calories;
+        totalProtein += food.protein;
+        totalFat += food.fat;
+        totalCarbs += food.carbs;
+        totalSugar += food.sugar;
+      });
+
+      // Display the totals
+      document.getElementById('calories-total').textContent = `Calories: ${totalCalories.toFixed(2)} kcal`;
+      document.getElementById('protein-total').textContent = `Protein: ${totalProtein.toFixed(2)} g`;
+      document.getElementById('fat-total').textContent = `Fat: ${totalFat.toFixed(2)} g`;
+      document.getElementById('carbs-total').textContent = `Carbohydrates: ${totalCarbs.toFixed(2)} g`;
+      document.getElementById('sugar-total').textContent = `Sugar: ${totalSugar.toFixed(2)} g`;
+
+      // Color code totals based on goal
+      colorCodeMacro('calories', totalCalories, macroGoals.calories);
+      colorCodeMacro('protein', totalProtein, macroGoals.protein);
+      colorCodeMacro('fat', totalFat, macroGoals.fat);
+      colorCodeMacro('carbs', totalCarbs, macroGoals.carbs);
+    }
+
+    // Helper function to color code macros based on how close they are to the goals
+    function colorCodeMacro(macro, total, goal) {
+      const element = document.getElementById(`${macro}-total`);
+      const difference = goal - total;
+
+      if (difference <= 0) {
+        element.className = 'macro-goal-status goal-met';
+      } else if (difference <= 10) {
+        element.className = 'macro-goal-status goal-close';
+      } else {
+        element.className = 'macro-goal-status goal-under';
+      }
+    }
+
+    // Function to clear the dropdown list
+    function clearDropdown() {
+      $('#food-dropdown').empty().append(new Option("Select food...", ""));  // Reset to initial placeholder
+      foodItems = [];
+      localStorage.setItem('foodItems', JSON.stringify(foodItems));
+    }
+
+    // Function to clear the food list and reset totals
+    function clearFoodList() {
+      addedFoods = [];  // Clear the added foods array
+      updateFoodTable();  // Reset the table and totals
+    }
+
+    // Function to calculate required macros based on user input
+    function calculateRequiredMacros() {
+      const age = parseInt(document.getElementById('age').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+      const height = parseFloat(document.getElementById('height').value);
+      const activityLevel = parseFloat(document.getElementById('activity-level').value);
+      const goal = document.getElementById('goal').value;
+
+      if (isNaN(age) || isNaN(weight) || isNaN(height) || isNaN(activityLevel) || goal === "") {
+        alert("Please fill out all fields.");
+        return;
+      }
+
+      // Mifflin-St Jeor Equation for BMR
+      let bmr = 10 * weight + 6.25 * height - 5 * age;
+      bmr = goal === "bulk" ? bmr + 500 : goal === "cut" ? bmr - 500 : bmr; // Adjust for bulk or cut
+
+      // Total Daily Energy Expenditure (TDEE)
+      const tdee = bmr * activityLevel;
+
+      // 40/30/30 macro split
+      const carbs = (tdee * 0.4) / 4;   // 40% of calories from carbs
+      const protein = (tdee * 0.3) / 4; // 30% of calories from protein
+      const fat = (tdee * 0.3) / 9;     // 30% of calories from fat
+
+      // Update macro goals
+      macroGoals = { calories: tdee, protein, fat, carbs };
+
+      // Update the macro goals display
+      document.getElementById('macro-calories-goal').textContent = `Calories: ${tdee.toFixed(0)} kcal`;
+      document.getElementById('macro-protein-goal').textContent = `Protein: ${protein.toFixed(0)} g`;
+      document.getElementById('macro-fat-goal').textContent = `Fat: ${fat.toFixed(0)} g`;
+      document.getElementById('macro-carbs-goal').textContent = `Carbohydrates: ${carbs.toFixed(0)} g`;
+    }
+
+    // Function to recommend a meal to meet macro goals
+    function recommendMeal() {
+      let remainingCalories = macroGoals.calories - addedFoods.reduce((acc, food) => acc + food.calories, 0);
+      let remainingProtein = macroGoals.protein - addedFoods.reduce((acc, food) => acc + food.protein, 0);
+
+      const recommendation = [];
+
+      // Loop through available foods and select the best match
+      foodItems.forEach(food => {
+        // Prioritize meeting protein goal while staying under or close to the calorie goal
+        if (food.protein >= remainingProtein && food.calories <= remainingCalories) {
+          recommendation.push(food);
+        } else if (food.protein >= remainingProtein && food.calories > remainingCalories) {
+          // If a food can meet the protein goal but slightly exceed the calorie goal, include it
+          recommendation.push(food);
+        }
+      });
+
+      if (recommendation.length > 0) {
+        const selectedFood = recommendation[0]; // Take the first matching item
+        const ratio = 100 / selectedFood.defaultWeight;
+
+        const addedFood = {
+          name: selectedFood.name,
+          weight: 100,
+          calories: selectedFood.calories * ratio,
+          protein: selectedFood.protein * ratio,
+          fat: selectedFood.fat * ratio,
+          carbs: selectedFood.carbs * ratio,
+          sugar: selectedFood.sugar * ratio
+        };
+
+        addedFoods.push(addedFood);  // Add the recommended food to the final list
+        updateFoodTable();  // Update the table to show the newly added food
+
+        alert(`Recommended Meal: ${selectedFood.name}`);
+      } else {
+        alert("No suitable meals found to meet your macro goals.");
+      }
+    }
+  </script>
+</body>
+</html>
